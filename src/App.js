@@ -1,7 +1,6 @@
 import './App.css';
 import _ from 'lodash';
-import React from 'react';
-
+import { useState } from 'react';
 
 const Horca = ({ children, ancho, alto, anchoContenido }) => {
 
@@ -51,7 +50,7 @@ const Palabra = ({ palabra }) => {
   </div>
 }
 
-const FinDeJuego = ({ juegoGanado, onResetearJuego }) => {
+const FinJuego = ({ juegoGanado, onResetearJuego }) => {
   const mensaje = juegoGanado ? <span style={{ color: 'green' }}>Ganaste!</span>
     : <span style={{ color: 'red' }}>Perdiste!</span>;
   return <div>
@@ -60,38 +59,84 @@ const FinDeJuego = ({ juegoGanado, onResetearJuego }) => {
   </div>;
 }
 
+const LetrasUsadas = ({ letras, onNuevaLetra }) => {
+  const handleNuevaLetra = (ev) => {
+    const letra = ev.target.value[0];
 
-function App() {
+    if (/[A-Za-z]/.test(letra)) {
+      onNuevaLetra(letra.toUpperCase());
+    }
+  }
 
+  return <div>
+    Letras usadas:  {letras.join(" - ")}
+    <input
+      type="text"
+      value=""
+      className="input-letra"
+      placeholder="Adivina una letra"
+      onChange={handleNuevaLetra}
+    />
+  </div>
+}
+
+const Juego = ({ onResetearJuego, onNuevaLetra, palabra, errores, ganador, perdio, letrasUsadas }) => {
+  const juegoTerminado = ganador || perdio
   return (
     <div className="juego">
       <h3>Juego de Ahorcado</h3>
       <Horca ancho={300} alto={300} anchoContenido={200}>
-        <Hombre nivel={8} />
+        <Hombre nivel={errores} />
       </Horca>
-      <Palabra palabra={this.props.palabra} />
-      {!this.juegoTerminado() ? <LetrasUsadas letras={this.props.letrasUsadas} onNuevaLetra={this.props.onNuevaLetra} /> :
-      <FinDeJuego juegoGanado={this.props.juegoGanado} onResetearJuego={this.props.onResetearJuego} />
+
+      <Palabra palabra={palabra} />
+
+      {!juegoTerminado ? <LetrasUsadas letras={letrasUsadas} onNuevaLetra={onNuevaLetra} /> :
+        <FinJuego juegoGanado={ganador} onResetearJuego={onResetearJuego} />
       }
     </div>
   );
 }
 
-const palabras = [
-  'SOFKAU',
-  'SOFKA',
-'FULLSTACK'
-];
+const App = () => {
+  const [letrasUsadas, setLetrasUsadas] = useState([]);
+  const [palabra, setPalabra] = useState(elegirPalabra());
 
+  const onResetearJuego = () => {
+    setLetrasUsadas([]);
+    setPalabra(elegirPalabra());
+  };
 
+  const onNuevaLetra = (letra) => {
+    if (letrasUsadas.indexOf(letra) !== -1) {
+      return;
+    }
+    setLetrasUsadas(letrasUsadas.concat(letra));
+  }
 
-function escogerPalabra(){
-  const indice =  Math.floor(Math.random() * palabras.length);
-  return palabras[indice];
+  return <div>
+    <Juego
+      onResetearJuego={onResetearJuego}
+      onNuevaLetra={onNuevaLetra}
+      letrasUsadas={letrasUsadas}
+      perdio={juegoEstaPerdido(palabra, letrasUsadas)}
+      ganador={juegoEstaGanado(palabra, letrasUsadas)}
+      palabra={palabraAdivinada(palabra, letrasUsadas)}
+      errores={obtenerErrores(palabra, letrasUsadas)} />
+  </div>
 }
 
-function juegoEstaGanado(state) {
-  return palabraAdivinada(state.palabra, state.letrasUsadas) === state.palabra;
+
+const palabras = [
+  'JAVASCRIPT',
+  'SOFKAU',
+  'REACTJS',
+  'DESARROLLADOR'
+];
+
+function elegirPalabra() {
+  const indice = Math.floor(Math.random() * palabras.length);
+  return palabras[indice];
 }
 
 function palabraAdivinada(palabra, letrasUsadas) {
@@ -101,64 +146,22 @@ function palabraAdivinada(palabra, letrasUsadas) {
   }, palabra);
 }
 
-/*function pintarEspacios(){
-  escogerPalabra().split('').join('_');
-}*/
-
-function juegoTerminado() {
-  return this.props.juegoGanado || this.props.juegoPerdido;
+function obtenerErrores(palabra, letrasUsadas) {
+  let errores = 0;
+  letrasUsadas.forEach(function (letra) {
+    if (palabra.indexOf(letra) === -1) {
+      errores++;
+    }
+  });
+  return errores;
 }
 
-class LetrasUsadas extends React.Component {
-  constructor(props) {
-    super();
+function juegoEstaGanado(palabra, letrasUsadas) {
+  return palabraAdivinada(palabra, letrasUsadas) === palabra;
+}
 
-    this.state = {
-      palabra: escogerPalabra(),
-      letrasUsadas: []
-    };
-    this.handleNuevaLetra = this.handleNuevaLetra.bind(this);
-    this.handleResetearJuego = this.handleResetearJuego.bind(this);
-  }
- 
-  render() {
-    return <div>
-      Letras usadas: {this.props.letras.join(' - ')}
-      {' '}
-      <input
-        type="text"
-        value=""
-        className="input-letra"
-        placeholder="Adivina una letra"
-        onChange={this.handleNuevaLetra.bind(this)} />
-    </div>;
-  }
-
-  // handleNuevaLetra(ev) {
-  //   const letra = ev.target.value[0];
-
-  //   if (/[A-Za-z]/.test(letra)) {
-  //     this.props.onNuevaLetra(letra.toUpperCase());
-  //   }
-  // }
-
-
-  handleNuevaLetra(letra) {
-    if (this.state.letrasUsadas.indexOf(letra) !== -1) {
-      return;
-    }
-
-    this.setState({
-      letrasUsadas: this.state.letrasUsadas.concat(letra)
-    });
-  }
-
-  handleResetearJuego() {
-    this.setState({
-      palabra: escogerPalabra(),
-      letrasUsadas: []
-    });
-  }
+function juegoEstaPerdido(palabra, letrasUsadas) {
+  return obtenerErrores(palabra, letrasUsadas) >= 7;
 }
 
 export default App;
